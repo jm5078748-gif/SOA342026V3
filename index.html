@@ -1,0 +1,2775 @@
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Opname Material</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        #scannerVideo {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .scanner-overlay {
+            position: relative;
+        }
+        .scanner-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 100px;
+            border: 2px solid #10B981;
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="min-h-full p-3 sm:p-4 md:p-6" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+  <div class="max-w-7xl mx-auto"><!-- Header -->
+   <div class="bg-white rounded-lg shadow-lg p-4 sm:p-5 md:p-6 mb-4 sm:mb-6">
+    <div class="flex items-center mb-2">
+     <svg class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-blue-600 mr-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+     </svg>
+     <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">Stock Opname Material</h1>
+    </div>
+    <p class="text-sm sm:text-base text-gray-600 ml-11 sm:ml-14 md:ml-16">Sistem manajemen stock opname material dengan import Excel dan barcode scanner</p>
+   </div><!-- Import Section -->
+   <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+    <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+     </svg> Import Master Data</h2>
+    <div class="flex flex-col gap-3 sm:gap-4">
+     <div class="w-full"><input type="file" id="excelFile" accept=".xlsx,.xls" class="block w-full text-xs sm:text-sm text-gray-500 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-full file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+      <p class="text-xs text-gray-500 mt-1.5">Format Excel: Kode Material | Nama Material | Satuan | Stock di Sistem</p>
+     </div><button onclick="importExcel()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg><span>Import Excel</span> </button>
+    </div>
+   </div><!-- Input Section -->
+   <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+    <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+     </svg> Input Stock Opname</h2><!-- Info Material Baru -->
+    <div id="infoMaterialBaru" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+     <div class="flex items-start">
+      <svg class="w-6 h-6 text-blue-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+       <p class="text-sm font-medium text-blue-800 mb-1">Material Baru (Tidak ada di Master Data)</p>
+       <p class="text-xs text-blue-700">Silakan lengkapi data material secara manual. Data ini akan tersimpan dalam record.</p>
+      </div>
+     </div>
+    </div><!-- Info Lokasi Sebelumnya -->
+    <div id="infoLokasiSebelumnya" class="hidden mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+     <div class="flex items-start">
+      <svg class="w-6 h-6 text-yellow-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div>
+       <p class="text-sm font-medium text-yellow-800 mb-1">Material ini sudah pernah diinput sebelumnya</p>
+       <p id="infoLokasiText" class="text-xs text-yellow-700"></p>
+      </div>
+     </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4">
+     <div class="sm:col-span-2 lg:col-span-1"><label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Kode Material</label>
+      <div class="flex gap-2 relative">
+       <div class="flex-1 relative"><input type="text" id="kodeMaterial" placeholder="Kode atau kata kunci..." class="w-full px-2.5 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" oninput="handleMaterialSearch(this.value)" autocomplete="off">
+        <div id="searchResults" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+       </div><button onclick="startBarcodeScanner()" class="bg-purple-600 hover:bg-purple-700 text-white px-2.5 sm:px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 text-sm sm:text-base whitespace-nowrap">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg><span>Scan</span> </button>
+      </div>
+     </div>
+     <div class="sm:col-span-2 lg:col-span-1"><label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Nama Material</label> <input type="text" id="namaMaterial" placeholder="Otomatis terisi atau input manual" class="w-full px-2.5 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+     </div>
+     <div class="col-span-1"><label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Satuan</label> <input type="text" id="satuan" placeholder="PCS, KG, dll" class="w-full px-2.5 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase">
+     </div>
+     <div class="col-span-1"><label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Stock di Sistem</label> <input type="number" id="stockSistem" placeholder="0" class="w-full px-2.5 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+     </div>
+     <div class="col-span-1"><label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Lokasi Rak</label> <input type="text" id="lokasiRak" placeholder="Contoh: A1, B2, C3" class="w-full px-2.5 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase">
+     </div>
+     <div class="col-span-1"><label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Qty Aktual</label> <input type="number" id="qtyAktual" placeholder="0" class="w-full px-2.5 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+     </div>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-2 sm:gap-4"><button onclick="addStockOpname()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg><span>Tambah Data</span> </button> <button onclick="clearForm()" class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg><span>Clear Form</span> </button>
+    </div>
+   </div><!-- Statistics -->
+   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+    <div class="bg-white rounded-lg shadow-lg p-3 sm:p-4">
+     <div class="flex items-center">
+      <div class="bg-blue-100 p-2 sm:p-3 rounded-full flex-shrink-0">
+       <svg class="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+       </svg>
+      </div>
+      <div class="ml-2 sm:ml-4 min-w-0">
+       <p class="text-xs sm:text-sm text-gray-600 truncate">Total Material</p>
+       <p class="text-xl sm:text-2xl font-bold text-blue-600" id="totalMaterial">0</p>
+      </div>
+     </div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-3 sm:p-4">
+     <div class="flex items-center">
+      <div class="bg-green-100 p-2 sm:p-3 rounded-full flex-shrink-0">
+       <svg class="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>
+      </div>
+      <div class="ml-2 sm:ml-4 min-w-0">
+       <p class="text-xs sm:text-sm text-gray-600 truncate">Sudah Diopname</p>
+       <p class="text-xl sm:text-2xl font-bold text-green-600" id="sudahOpname">0</p>
+      </div>
+     </div>
+    </div>
+    <div onclick="showSelisihModal('minus')" class="bg-white rounded-lg shadow-lg p-3 sm:p-4 cursor-pointer hover:shadow-xl transition-shadow">
+     <div class="flex items-center">
+      <div class="bg-red-100 p-2 sm:p-3 rounded-full flex-shrink-0">
+       <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+       </svg>
+      </div>
+      <div class="ml-2 sm:ml-4 min-w-0">
+       <p class="text-xs sm:text-sm text-gray-600 truncate">Selisih Minus</p>
+       <p class="text-xl sm:text-2xl font-bold text-red-600" id="selisihMinus">0</p>
+      </div>
+     </div>
+     <p class="text-xs text-gray-500 mt-1 text-center">👆 Klik untuk detail</p>
+    </div>
+    <div onclick="showSelisihModal('plus')" class="bg-white rounded-lg shadow-lg p-3 sm:p-4 cursor-pointer hover:shadow-xl transition-shadow">
+     <div class="flex items-center">
+      <div class="bg-yellow-100 p-2 sm:p-3 rounded-full flex-shrink-0">
+       <svg class="w-6 h-6 sm:w-8 sm:h-8 text-yellow-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+       </svg>
+      </div>
+      <div class="ml-2 sm:ml-4 min-w-0">
+       <p class="text-xs sm:text-sm text-gray-600 truncate">Selisih Plus</p>
+       <p class="text-xl sm:text-2xl font-bold text-yellow-600" id="selisihPlus">0</p>
+      </div>
+     </div>
+     <p class="text-xs text-gray-500 mt-1 text-center">👆 Klik untuk detail</p>
+    </div>
+   </div><!-- Data Table -->
+   <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4">
+     <h2 class="text-lg sm:text-xl font-semibold text-gray-800 flex items-center gap-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg> Data Stock Opname</h2>
+     <div class="flex flex-wrap gap-2"><button onclick="showBelumOpnameModal()" class="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm whitespace-nowrap"> 📋 Belum Opname </button> <button onclick="exportToExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm whitespace-nowrap"> 📥 Export Excel </button> <button onclick="backupData()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm whitespace-nowrap"> 💾 Backup </button> <button onclick="showRestoreModal()" class="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm whitespace-nowrap"> 📂 Restore </button> <button onclick="clearMasterData()" class="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm whitespace-nowrap"> 🗂️ Hapus Master </button> <button onclick="clearAllData()" class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm whitespace-nowrap"> 🗑️ Hapus Semua </button>
+     </div>
+    </div><!-- Search Bar for Main Table -->
+    <div class="mb-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+     <div class="w-full sm:flex-1">
+      <div class="relative"><input type="text" id="searchMainTable" placeholder="🔍 Cari kode material, nama, lokasi rak, atau keterangan..." class="w-full px-4 py-2.5 pl-10 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" oninput="filterMainTable(this.value)"> <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+      </div>
+     </div>
+     <div class="flex gap-2 items-center"><span id="searchResultCount" class="text-sm text-gray-600 whitespace-nowrap"></span> <button onclick="clearMainSearch()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-colors"> 🔄 Reset </button>
+     </div>
+    </div>
+    <div class="table-container overflow-x-auto -mx-4 sm:mx-0">
+     <div class="inline-block min-w-full align-middle">
+      <table class="min-w-full border-collapse">
+       <thead class="sticky-header bg-gray-50">
+        <tr>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">No</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Kode</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Nama Material</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Lokasi Rak</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Satuan</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Stock Sistem</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Qty Aktual</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Selisih</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Status</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Keterangan</th>
+         <th class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">Aksi</th>
+        </tr>
+       </thead>
+       <tbody id="dataTable">
+        <tr>
+         <td colspan="11" class="border border-gray-300 px-4 py-8 text-center text-gray-500 text-xs sm:text-sm">Belum ada data. Silakan mulai input data stock opname.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+        // Global variables
+        let masterData = [];
+        let stockOpnameData = [];
+        let codeReader = null;
+        let currentStream = null;
+        let db = null;
+
+        // IndexedDB Setup
+        const DB_NAME = 'StockOpnameDB';
+        const DB_VERSION = 1;
+        const MASTER_STORE = 'masterData';
+        const STOCK_STORE = 'stockOpnameData';
+
+        // Initialize IndexedDB
+        async function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => {
+                    console.error('IndexedDB error:', request.error);
+                    reject(request.error);
+                };
+                
+                request.onsuccess = () => {
+                    db = request.result;
+                    console.log('IndexedDB initialized successfully');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    
+                    // Create object stores if they don't exist
+                    if (!db.objectStoreNames.contains(MASTER_STORE)) {
+                        db.createObjectStore(MASTER_STORE, { keyPath: 'kode' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains(STOCK_STORE)) {
+                        const stockStore = db.createObjectStore(STOCK_STORE, { autoIncrement: true });
+                        stockStore.createIndex('kode', 'kode', { unique: false });
+                        stockStore.createIndex('lokasiRak', 'lokasiRak', { unique: false });
+                    }
+                };
+            });
+        }
+
+        // Save master data to IndexedDB
+        async function saveMasterDataToDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([MASTER_STORE], 'readwrite');
+                const store = transaction.objectStore(MASTER_STORE);
+                
+                // Clear existing data
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = () => {
+                    // Add all master data
+                    masterData.forEach(item => {
+                        store.add(item);
+                    });
+                };
+                
+                transaction.oncomplete = () => {
+                    console.log('Master data saved to IndexedDB');
+                    resolve();
+                };
+                
+                transaction.onerror = () => {
+                    console.error('Error saving master data:', transaction.error);
+                    reject(transaction.error);
+                };
+            });
+        }
+
+        // Save stock opname data to IndexedDB
+        async function saveStockDataToDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STOCK_STORE], 'readwrite');
+                const store = transaction.objectStore(STOCK_STORE);
+                
+                // Clear existing data
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = () => {
+                    // Add all stock opname data
+                    stockOpnameData.forEach(item => {
+                        store.add(item);
+                    });
+                };
+                
+                transaction.oncomplete = () => {
+                    console.log('Stock opname data saved to IndexedDB');
+                    resolve();
+                };
+                
+                transaction.onerror = () => {
+                    console.error('Error saving stock data:', transaction.error);
+                    reject(transaction.error);
+                };
+            });
+        }
+
+        // Load master data from IndexedDB
+        async function loadMasterDataFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([MASTER_STORE], 'readonly');
+                const store = transaction.objectStore(MASTER_STORE);
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    masterData = request.result || [];
+                    console.log('Master data loaded from IndexedDB:', masterData.length);
+                    resolve(masterData);
+                };
+                
+                request.onerror = () => {
+                    console.error('Error loading master data:', request.error);
+                    reject(request.error);
+                };
+            });
+        }
+
+        // Load stock opname data from IndexedDB
+        async function loadStockDataFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STOCK_STORE], 'readonly');
+                const store = transaction.objectStore(STOCK_STORE);
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    stockOpnameData = request.result || [];
+                    console.log('Stock opname data loaded from IndexedDB:', stockOpnameData.length);
+                    resolve(stockOpnameData);
+                };
+                
+                request.onerror = () => {
+                    console.error('Error loading stock data:', request.error);
+                    reject(request.error);
+                };
+            });
+        }
+
+        // Initialize barcode reader
+        function initializeBarcodeReader() {
+            if (typeof ZXing !== 'undefined') {
+                codeReader = new ZXing.BrowserMultiFormatReader();
+            }
+        }
+
+        // Start barcode scanner
+        async function startBarcodeScanner() {
+            if (!codeReader) {
+                initializeBarcodeReader();
+            }
+
+            if (!codeReader) {
+                showNotification('Barcode scanner tidak tersedia!', 'error');
+                return;
+            }
+
+            try {
+                // Check camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+
+                // Show scanner modal
+                showScannerModal();
+            } catch (error) {
+                if (error.name === 'NotAllowedError') {
+                    showNotification('Akses kamera ditolak. Silakan izinkan akses kamera!', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    showNotification('Kamera tidak ditemukan!', 'error');
+                } else {
+                    showNotification('Error mengakses kamera: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Show scanner modal
+        function showScannerModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="bg-purple-100 p-2 rounded-full mr-3">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Scan Barcode Material</h3>
+                        </div>
+                        <button onclick="stopScanner()" 
+                                class="text-gray-500 hover:text-gray-700 text-2xl">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="scanner-overlay">
+                            <video id="scannerVideo" autoplay muted playsinline></video>
+                            <div class="scanner-frame"></div>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2 text-center">Arahkan kamera ke barcode material</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="bg-blue-50 rounded-lg p-3">
+                            <p class="text-sm text-blue-800">
+                                <strong>Tips:</strong> Pastikan barcode terlihat jelas dalam frame hijau dan pencahayaan cukup terang.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 justify-end">
+                        <button onclick="stopScanner()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="switchCamera()" 
+                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                            🔄 Ganti Kamera
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Start scanning
+            startScanning();
+        }
+
+        // Start scanning process
+        async function startScanning() {
+            try {
+                const videoElement = document.getElementById('scannerVideo');
+                
+                // Get available video devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                // Prefer back camera if available
+                let selectedDevice = videoDevices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('rear')
+                ) || videoDevices[0];
+
+                // Start camera stream
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: selectedDevice ? selectedDevice.deviceId : undefined,
+                        facingMode: 'environment' // Prefer back camera
+                    }
+                });
+
+                videoElement.srcObject = currentStream;
+
+                // Start barcode detection
+                codeReader.decodeFromVideoDevice(selectedDevice?.deviceId, videoElement, (result, error) => {
+                    if (result) {
+                        const scannedCode = result.getText();
+                        handleScannedBarcode(scannedCode);
+                    }
+                    // Ignore errors during scanning (they're normal)
+                });
+
+            } catch (error) {
+                showNotification('Error memulai scanner: ' + error.message, 'error');
+                stopScanner();
+            }
+        }
+
+        // Handle scanned barcode
+        function handleScannedBarcode(code) {
+            // Extract numeric code if needed
+            const numericCode = code.replace(/\D/g, '');
+            
+            if (numericCode) {
+                // Fill the material code input
+                document.getElementById('kodeMaterial').value = numericCode;
+                
+                // Refresh material info
+                refreshMaterialInfo();
+                
+                // Stop scanner and close modal
+                stopScanner();
+                
+                // Show success notification
+                showNotification(`Barcode berhasil discan: ${numericCode}`, 'success');
+                
+                // Focus on qty actual input or nama material if new
+                setTimeout(() => {
+                    const namaMaterialInput = document.getElementById('namaMaterial');
+                    if (!namaMaterialInput.value) {
+                        namaMaterialInput.focus();
+                    } else {
+                        document.getElementById('qtyAktual').focus();
+                    }
+                }, 500);
+            } else {
+                showNotification('Barcode tidak valid atau tidak mengandung angka!', 'error');
+            }
+        }
+
+        // Switch camera (front/back)
+        async function switchCamera() {
+            try {
+                // Stop current stream
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+
+                // Get available video devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length > 1) {
+                    // Find current device and switch to next one
+                    const videoElement = document.getElementById('scannerVideo');
+                    const currentDeviceId = currentStream?.getVideoTracks()[0]?.getSettings()?.deviceId;
+                    const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
+                    const nextIndex = (currentIndex + 1) % videoDevices.length;
+                    const nextDevice = videoDevices[nextIndex];
+
+                    // Start new stream with different camera
+                    currentStream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: nextDevice.deviceId }
+                    });
+
+                    videoElement.srcObject = currentStream;
+
+                    // Restart barcode detection
+                    codeReader.decodeFromVideoDevice(nextDevice.deviceId, videoElement, (result, error) => {
+                        if (result) {
+                            const scannedCode = result.getText();
+                            handleScannedBarcode(scannedCode);
+                        }
+                    });
+
+                    showNotification('Kamera berhasil diganti!', 'success');
+                } else {
+                    showNotification('Hanya ada satu kamera tersedia!', 'info');
+                }
+            } catch (error) {
+                showNotification('Error mengganti kamera: ' + error.message, 'error');
+            }
+        }
+
+        // Stop scanner
+        function stopScanner() {
+            // Stop camera stream
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+
+            // Stop barcode reader
+            if (codeReader) {
+                codeReader.reset();
+            }
+
+            // Remove modal
+            const modal = document.querySelector('.fixed');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Load data from IndexedDB on page load
+        async function loadDataFromStorage() {
+            try {
+                await loadMasterDataFromDB();
+                await loadStockDataFromDB();
+                updateStatistics();
+                renderTable();
+            } catch (error) {
+                console.error('Error loading data from IndexedDB:', error);
+                showNotification('Error memuat data dari database', 'error');
+            }
+        }
+
+        // Save data to IndexedDB
+        async function saveDataToStorage() {
+            try {
+                await saveMasterDataToDB();
+                await saveStockDataToDB();
+            } catch (error) {
+                console.error('Error saving data to IndexedDB:', error);
+                showNotification('Error menyimpan data ke database', 'error');
+            }
+        }
+
+        // Import Excel function
+        
+async function importExcel() {
+    const fileInput = document.getElementById("excelFile");
+    if (!fileInput || !fileInput.files.length) {
+        alert("Silakan pilih file Excel terlebih dahulu");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async function (e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            masterData = jsonData.map(row => ({
+                kode: String(row[Object.keys(row)[0]]).trim(),
+                nama: String(row[Object.keys(row)[1]]).trim(),
+                satuan: String(row[Object.keys(row)[2]]).trim(),
+                stokSistem: String(row[Object.keys(row)[3]]).trim()
+            }));
+
+            await saveMasterDataToDB();
+            alert("Master data berhasil diimport: " + masterData.length + " item");
+        } catch (err) {
+            console.error("Import error:", err);
+            alert("Gagal import Excel, periksa format file");
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    
+                    // Check if there's existing data in stockOpnameData
+                    const hasExistingData = stockOpnameData.length > 0;
+                    
+                    // Parse new master data
+                    const newMasterData = [];
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row[0]) { // Check if kode material exists
+                            newMasterData.push({
+                                kode: row[0],
+                                nama: row[1] || '',
+                                satuan: row[2] || '',
+                                stockSistem: row[3] || 0
+                            });
+                        }
+                    }
+                    
+                    if (hasExistingData) {
+                        // Show confirmation modal for updating existing data
+                        showUpdateConfirmationModal(newMasterData);
+                    } else {
+                        // No existing data, just import normally
+                        masterData = newMasterData;
+                        saveDataToStorage();
+                        showNotification(`Berhasil import ${masterData.length} data material!`, 'success');
+                        updateStatistics();
+                        renderTable();
+                    }
+                } catch (error) {
+                    showNotification('Error membaca file Excel!', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Show update confirmation modal
+        function showUpdateConfirmationModal(newMasterData) {
+            // Analyze what will be updated
+            let updatedCount = 0;
+            let updatedItems = [];
+            
+            newMasterData.forEach(newItem => {
+                const oldItem = masterData.find(m => m.kode == newItem.kode);
+                if (oldItem && oldItem.stockSistem !== newItem.stockSistem) {
+                    updatedCount++;
+                    updatedItems.push({
+                        kode: newItem.kode,
+                        nama: newItem.nama,
+                        oldStock: oldItem.stockSistem,
+                        newStock: newItem.stockSistem
+                    });
+                }
+            });
+            
+            // Check affected stock opname records
+            let affectedRecords = 0;
+            if (updatedItems.length > 0) {
+                const updatedKodes = new Set(updatedItems.map(item => item.kode));
+                affectedRecords = stockOpnameData.filter(record => updatedKodes.has(record.kode)).length;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-100 p-2 rounded-full mr-3">
+                            <span class="text-2xl">🔄</span>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Update Master Data & Stock Sistem</h3>
+                            <p class="text-sm text-gray-600">Import data baru akan memperbarui master data dan data opname yang sudah ada</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <h4 class="font-medium text-blue-800 mb-2">📊 Ringkasan Update:</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="text-blue-700">Total Material Baru:</p>
+                                    <p class="text-xl font-bold text-blue-800">${newMasterData.length}</p>
+                                </div>
+                                <div>
+                                    <p class="text-blue-700">Material dengan Stock Berubah:</p>
+                                    <p class="text-xl font-bold text-blue-800">${updatedCount}</p>
+                                </div>
+                                <div>
+                                    <p class="text-blue-700">Record Opname Terpengaruh:</p>
+                                    <p class="text-xl font-bold text-orange-600">${affectedRecords}</p>
+                                </div>
+                                <div>
+                                    <p class="text-blue-700">Total Record Opname:</p>
+                                    <p class="text-xl font-bold text-gray-700">${stockOpnameData.length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${updatedCount > 0 ? `
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                            <h4 class="font-medium text-orange-800 mb-3">⚠️ Perubahan Stock Sistem yang Terdeteksi:</h4>
+                            <div class="max-h-48 overflow-y-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="sticky top-0 bg-orange-100">
+                                        <tr>
+                                            <th class="text-left px-2 py-1 text-orange-800">Kode</th>
+                                            <th class="text-left px-2 py-1 text-orange-800">Nama Material</th>
+                                            <th class="text-right px-2 py-1 text-orange-800">Stock Lama</th>
+                                            <th class="text-center px-2 py-1 text-orange-800">→</th>
+                                            <th class="text-right px-2 py-1 text-orange-800">Stock Baru</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${updatedItems.map(item => `
+                                            <tr class="border-t border-orange-100">
+                                                <td class="px-2 py-1 font-mono text-xs">${item.kode}</td>
+                                                <td class="px-2 py-1">${item.nama}</td>
+                                                <td class="px-2 py-1 text-right font-semibold text-red-600">${item.oldStock.toLocaleString('id-ID')}</td>
+                                                <td class="px-2 py-1 text-center">→</td>
+                                                <td class="px-2 py-1 text-right font-semibold text-green-600">${item.newStock.toLocaleString('id-ID')}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h4 class="font-medium text-green-800 mb-2">✅ Yang Akan Dilakukan:</h4>
+                            <ul class="text-sm text-green-700 space-y-1 ml-4">
+                                <li>✓ Master data akan diperbarui dengan data baru dari Excel</li>
+                                <li>✓ Stock Sistem di data opname yang sudah ada akan diupdate otomatis</li>
+                                <li>✓ Selisih akan dihitung ulang berdasarkan stock sistem yang baru</li>
+                                <li>✓ Qty Aktual dan data lainnya tetap tidak berubah</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button onclick="confirmUpdateMasterData()" 
+                                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            🔄 Update Master Data & Stock Sistem
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Store new master data temporarily
+            window.pendingMasterData = newMasterData;
+        }
+
+        // Confirm update master data
+        function confirmUpdateMasterData() {
+            if (!window.pendingMasterData) return;
+            
+            const newMasterData = window.pendingMasterData;
+            
+            // Track updates
+            let updatedRecordsCount = 0;
+            let updatedMaterialsCount = 0;
+            
+            // Update master data
+            masterData = newMasterData;
+            
+            // Update stock sistem in existing stock opname data
+            stockOpnameData.forEach(record => {
+                const masterItem = newMasterData.find(m => m.kode == record.kode);
+                if (masterItem) {
+                    const oldStock = record.stockSistem;
+                    const newStock = masterItem.stockSistem;
+                    
+                    if (oldStock !== newStock) {
+                        record.stockSistem = newStock;
+                        record.selisih = record.qtyAktual - newStock;
+                        updatedRecordsCount++;
+                    }
+                    
+                    // Also update nama and satuan if they changed in master
+                    record.nama = masterItem.nama;
+                    record.satuan = masterItem.satuan;
+                }
+            });
+            
+            // Count how many unique materials were updated
+            const updatedKodes = new Set();
+            newMasterData.forEach(newItem => {
+                const oldItem = masterData.find(m => m.kode == newItem.kode);
+                if (!oldItem || oldItem.stockSistem !== newItem.stockSistem) {
+                    updatedKodes.add(newItem.kode);
+                }
+            });
+            updatedMaterialsCount = updatedKodes.size;
+            
+            // Save to storage
+            saveDataToStorage();
+            updateStatistics();
+            renderTable();
+            
+            // Close modal
+            const modal = document.querySelector('.fixed');
+            if (modal) modal.remove();
+            
+            // Show success notification
+            showNotification(
+                `✅ Master data berhasil diupdate! ${newMasterData.length} material diimport, ${updatedRecordsCount} record opname diperbarui.`, 
+                'success'
+            );
+            
+            // Clean up
+            delete window.pendingMasterData;
+        }
+
+        // Handle material search with keyword
+        function handleMaterialSearch(searchValue) {
+            const searchResults = document.getElementById('searchResults');
+            const infoLokasi = document.getElementById('infoLokasiSebelumnya');
+            const infoMaterialBaru = document.getElementById('infoMaterialBaru');
+            
+            if (!searchValue || searchValue.length < 1) {
+                searchResults.classList.add('hidden');
+                infoLokasi.classList.add('hidden');
+                infoMaterialBaru.classList.add('hidden');
+                refreshMaterialInfo();
+                return;
+            }
+
+            // Search by kode or nama (case insensitive)
+            const searchLower = searchValue.toLowerCase();
+            const matches = masterData.filter(material => {
+                const kodeMatch = material.kode.toString().includes(searchValue);
+                const namaMatch = material.nama.toLowerCase().includes(searchLower);
+                return kodeMatch || namaMatch;
+            });
+
+            if (matches.length > 0) {
+                // Show search results dropdown
+                searchResults.innerHTML = matches.map(material => `
+                    <div onclick="selectMaterial('${material.kode}')" 
+                         class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium text-sm text-gray-800">${material.kode} - ${material.nama}</div>
+                                <div class="text-xs text-gray-500">Satuan: ${material.satuan} | Stock: ${material.stockSistem.toLocaleString('id-ID')}</div>
+                            </div>
+                            <div class="text-blue-600 text-xs">👉</div>
+                        </div>
+                    </div>
+                `).join('');
+                searchResults.classList.remove('hidden');
+                infoMaterialBaru.classList.add('hidden');
+            } else {
+                searchResults.innerHTML = `
+                    <div class="px-3 py-2 text-sm text-gray-500 text-center">
+                        Material tidak ditemukan di master data
+                    </div>
+                `;
+                searchResults.classList.remove('hidden');
+                
+                // Show info that this is a new material
+                infoMaterialBaru.classList.remove('hidden');
+            }
+
+            // Check if exact match by kode
+            const exactMatch = masterData.find(m => m.kode == searchValue);
+            if (exactMatch) {
+                refreshMaterialInfo();
+                showPreviousLocationInfo(searchValue);
+                infoMaterialBaru.classList.add('hidden');
+            } else {
+                // Clear other fields if no exact match - allow manual input
+                document.getElementById('namaMaterial').value = '';
+                document.getElementById('satuan').value = '';
+                document.getElementById('stockSistem').value = '';
+                infoLokasi.classList.add('hidden');
+            }
+        }
+
+        // Show previous location info
+        function showPreviousLocationInfo(kode) {
+            const existingItems = stockOpnameData.filter(item => item.kode == kode);
+            const infoLokasi = document.getElementById('infoLokasiSebelumnya');
+            const infoText = document.getElementById('infoLokasiText');
+            
+            if (existingItems.length > 0) {
+                const locations = existingItems.map(item => item.lokasiRak).join(', ');
+                infoText.textContent = `Material ini sudah ada di lokasi rak: ${locations}`;
+                infoLokasi.classList.remove('hidden');
+            } else {
+                infoLokasi.classList.add('hidden');
+            }
+        }
+
+        // Select material from search results
+        function selectMaterial(kode) {
+            document.getElementById('kodeMaterial').value = kode;
+            document.getElementById('searchResults').classList.add('hidden');
+            refreshMaterialInfo();
+            showPreviousLocationInfo(kode);
+            document.getElementById('infoMaterialBaru').classList.add('hidden');
+            // Focus on lokasi rak input
+            document.getElementById('lokasiRak').focus();
+        }
+
+        // Close search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchResults = document.getElementById('searchResults');
+            const kodeMaterial = document.getElementById('kodeMaterial');
+            
+            if (searchResults && kodeMaterial && 
+                !searchResults.contains(event.target) && 
+                event.target !== kodeMaterial) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        // Refresh material info when kode material changes
+        function refreshMaterialInfo() {
+            const kode = document.getElementById('kodeMaterial').value;
+            const material = masterData.find(m => m.kode == kode);
+            
+            if (material) {
+                document.getElementById('namaMaterial').value = material.nama;
+                document.getElementById('satuan').value = material.satuan;
+                document.getElementById('stockSistem').value = material.stockSistem;
+            }
+        }
+
+        // Add stock opname data
+        function addStockOpname() {
+            const kode = document.getElementById('kodeMaterial').value.trim();
+            const nama = document.getElementById('namaMaterial').value.trim();
+            const satuan = document.getElementById('satuan').value.trim().toUpperCase();
+            const stockSistem = parseFloat(document.getElementById('stockSistem').value) || 0;
+            const lokasiRak = document.getElementById('lokasiRak').value.trim().toUpperCase();
+            const qtyAktual = parseFloat(document.getElementById('qtyAktual').value) || 0;
+
+            // Validation
+            if (!kode) {
+                showNotification('Kode material harus diisi!', 'error');
+                return;
+            }
+
+            if (!nama) {
+                showNotification('Nama material harus diisi!', 'error');
+                return;
+            }
+
+            if (!satuan) {
+                showNotification('Satuan harus diisi!', 'error');
+                return;
+            }
+
+            if (!lokasiRak) {
+                showNotification('Lokasi Rak harus diisi!', 'error');
+                return;
+            }
+
+            // Check if this is a new material (not in master data)
+            const materialInMaster = masterData.find(m => m.kode == kode);
+            const isNewMaterial = !materialInMaster;
+
+            // If new material, add to master data
+            if (isNewMaterial) {
+                masterData.push({
+                    kode: kode,
+                    nama: nama,
+                    satuan: satuan,
+                    stockSistem: stockSistem
+                });
+                saveDataToStorage();
+                showNotification(`Material baru "${nama}" ditambahkan ke master data!`, 'info');
+            }
+
+            // Check if material with same kode and same location exists
+            const existingItems = stockOpnameData.filter(item => item.kode == kode);
+            const sameLocationItem = existingItems.find(item => item.lokasiRak === lokasiRak);
+            
+            const newData = {
+                kode: kode,
+                nama: nama,
+                satuan: satuan,
+                stockSistem: stockSistem,
+                lokasiRak: lokasiRak,
+                qtyAktual: qtyAktual,
+                selisih: qtyAktual - stockSistem,
+                keterangan: '',
+                timestamp: new Date().toLocaleString('id-ID'),
+                isNewMaterial: isNewMaterial
+            };
+
+            if (sameLocationItem) {
+                // Same material, same location - check for differences
+                const actualIndex = stockOpnameData.findIndex(item => item.kode == kode && item.lokasiRak === lokasiRak);
+                
+                // Detect differences
+                const rakBeda = sameLocationItem.lokasiRak !== lokasiRak; // Always false in this case
+                const qtyBeda = sameLocationItem.qtyAktual !== qtyAktual;
+                
+                if (qtyBeda) {
+                    // Qty different - show revision modal
+                    showRevisionModal(sameLocationItem, newData, actualIndex);
+                } else {
+                    // Exactly the same - notify user
+                    showNotification('Data material ini sudah ada dengan nilai yang sama!', 'info');
+                }
+            } else if (existingItems.length > 0) {
+                // Same material, different location
+                const firstExisting = existingItems[0];
+                
+                // Detect differences
+                const rakBeda = firstExisting.lokasiRak !== lokasiRak;
+                const qtyBeda = firstExisting.qtyAktual !== qtyAktual;
+                
+                if (rakBeda && qtyBeda) {
+                    // Both location and qty different - ask user
+                    showRevisionModal(firstExisting, newData, -1);
+                } else {
+                    // Only location different (qty same or no comparison needed) - add as new entry
+                    stockOpnameData.push(newData);
+                    const statusMsg = isNewMaterial ? 
+                        `Material baru berhasil ditambahkan di lokasi rak ${newData.lokasiRak}!` :
+                        `Data berhasil ditambahkan di lokasi rak ${newData.lokasiRak}!`;
+                    showNotification(statusMsg, 'success');
+                    clearForm();
+                    saveDataToStorage();
+                    updateStatistics();
+                    renderTable();
+                }
+            } else {
+                // New material entry - no existing records
+                stockOpnameData.push(newData);
+                const statusMsg = isNewMaterial ? 
+                    'Material baru berhasil ditambahkan dan direcord!' :
+                    'Data berhasil ditambahkan!';
+                showNotification(statusMsg, 'success');
+                clearForm();
+                saveDataToStorage();
+                updateStatistics();
+                renderTable();
+            }
+        }
+
+        // Show revision modal with smart field detection
+        function showRevisionModal(existingData, newData, existingIndex, situationType) {
+            // Detect differences
+            const rakBeda = existingData.lokasiRak !== newData.lokasiRak;
+            const qtyBeda = existingData.qtyAktual !== newData.qtyAktual;
+            
+            // Determine title and message based on situation
+            let title = 'Material Sudah Diinput';
+            let message = '';
+            let showRevisionForm = false;
+            
+            if (situationType === 'same_location') {
+                // Sama lokasi - tanya mau revisi atau tidak
+                if (qtyBeda) {
+                    message = `Material <strong>${existingData.nama}</strong> (Kode: ${existingData.kode}) sudah pernah diinput di lokasi rak <strong class="text-blue-600">${existingData.lokasiRak}</strong> dengan Qty berbeda.`;
+                    showRevisionForm = true;
+                } else {
+                    message = `Material <strong>${existingData.nama}</strong> (Kode: ${existingData.kode}) sudah pernah diinput di lokasi rak <strong class="text-blue-600">${existingData.lokasiRak}</strong> dengan data yang sama.`;
+                }
+            } else if (situationType === 'different_location_and_qty') {
+                // Beda lokasi dan qty
+                title = 'Deteksi Perbedaan Data';
+                message = `Material <strong>${existingData.nama}</strong> (Kode: ${existingData.kode}) sudah pernah diinput dengan <strong>Lokasi Rak</strong> dan <strong>Qty Aktual</strong> yang berbeda.`;
+                showRevisionForm = true;
+            } else if (situationType === 'different_location_same_qty') {
+                // Beda lokasi tapi qty sama
+                title = 'Deteksi Perbedaan Data';
+                message = `Material <strong>${existingData.nama}</strong> (Kode: ${existingData.kode}) sudah pernah diinput dengan <strong>Lokasi Rak</strong> yang berbeda.`;
+                showRevisionForm = true;
+            }
+            
+            // Store data globally for button handlers
+            window.revisionData = {
+                existingIndex: existingIndex,
+                existingData: existingData,
+                newData: newData,
+                rakBeda: rakBeda,
+                qtyBeda: qtyBeda,
+                situationType: situationType
+            };
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-yellow-100 p-2 rounded-full mr-3">
+                            <span class="text-xl">⚠️</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-gray-600 mb-4">${message}</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                    <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded mr-2">DATA LAMA</span>
+                                </h4>
+                                <div class="text-sm text-gray-600 space-y-1">
+                                    <div>Lokasi Rak: <span class="font-medium ${rakBeda ? 'text-red-600' : ''}">${existingData.lokasiRak}</span></div>
+                                    <div>Qty Aktual: <span class="font-medium ${qtyBeda ? 'text-red-600' : ''}">${existingData.qtyAktual.toLocaleString('id-ID')}</span></div>
+                                    <div>Selisih: <span class="font-medium ${existingData.selisih >= 0 ? 'text-green-600' : 'text-red-600'}">${existingData.selisih >= 0 ? '+' : ''}${existingData.selisih.toLocaleString('id-ID')}</span></div>
+                                    <div>Waktu Input: <span class="font-medium text-xs">${existingData.timestamp}</span></div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-blue-50 rounded-lg p-3">
+                                <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                    <span class="bg-blue-200 text-blue-800 text-xs px-2 py-0.5 rounded mr-2">DATA BARU</span>
+                                </h4>
+                                <div class="text-sm text-gray-600 space-y-1">
+                                    <div>Lokasi Rak: <span class="font-medium ${rakBeda ? 'text-blue-600' : ''}">${newData.lokasiRak}</span></div>
+                                    <div>Qty Aktual: <span class="font-medium ${qtyBeda ? 'text-blue-600' : ''}">${newData.qtyAktual.toLocaleString('id-ID')}</span></div>
+                                    <div>Selisih: <span class="font-medium ${newData.selisih >= 0 ? 'text-green-600' : 'text-red-600'}">${newData.selisih >= 0 ? '+' : ''}${newData.selisih.toLocaleString('id-ID')}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${rakBeda || qtyBeda ? `
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                            <p class="text-sm text-purple-800">
+                                <strong>Perbedaan Terdeteksi:</strong>
+                                ${rakBeda ? '<span class="inline-block bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-1">Lokasi Rak</span>' : ''}
+                                ${qtyBeda ? '<span class="inline-block bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs">Qty Aktual</span>' : ''}
+                            </p>
+                        </div>
+                        ` : ''}
+                        
+                        <p class="text-gray-600 text-sm mb-4">Apakah Anda ingin merevisi data yang sudah ada?</p>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button onclick="cancelRevision()" 
+                                class="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Tidak, Gunakan Data Lama
+                        </button>
+                        <button onclick="showRevisionFormModal()" 
+                                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Ya, Revisi Data
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Cancel revision
+        function cancelRevision() {
+            const modal = document.querySelector('.fixed');
+            if (modal) modal.remove();
+            clearForm();
+            showNotification('Operasi dibatalkan', 'info');
+            
+            // Clean up global data
+            if (window.revisionData) {
+                delete window.revisionData;
+            }
+        }
+
+        // Add as new entry (for different location scenario)
+        function addAsNewEntry() {
+            if (!window.revisionData) return;
+            
+            const { newData } = window.revisionData;
+            
+            // Add as new entry
+            stockOpnameData.push(newData);
+            
+            // Close modal
+            const modal = document.querySelector('.fixed');
+            if (modal) modal.remove();
+            
+            clearForm();
+            saveDataToStorage();
+            updateStatistics();
+            renderTable();
+            showNotification(`Data berhasil ditambahkan di lokasi rak ${newData.lokasiRak} sebagai entry baru!`, 'success');
+            
+            // Clean up global data
+            delete window.revisionData;
+        }
+
+        // Show revision form modal
+        function showRevisionFormModal() {
+            if (!window.revisionData) return;
+            
+            const { existingData, newData, rakBeda, qtyBeda, existingIndex } = window.revisionData;
+            
+            // Close previous modal
+            const prevModal = document.querySelector('.fixed');
+            if (prevModal) prevModal.remove();
+            
+            // Determine which fields should be editable
+            const allEditable = rakBeda && qtyBeda;
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="bg-blue-100 p-2 rounded-full mr-3">
+                                <span class="text-xl">✏️</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Form Revisi Data</h3>
+                        </div>
+                        <button onclick="cancelRevision()" 
+                                class="text-gray-500 hover:text-gray-700 text-2xl">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                            <p class="text-sm text-blue-800">
+                                <strong>Petunjuk:</strong> ${allEditable ? 'Semua field dapat direvisi karena terdapat perbedaan pada Lokasi Rak dan Qty Aktual.' : 'Hanya field yang berbeda yang dapat direvisi.'}
+                            </p>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <h4 class="font-medium text-gray-700 mb-2">Informasi Material:</h4>
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <div>Kode: <span class="font-medium">${existingData.kode}</span></div>
+                                <div>Nama: <span class="font-medium">${existingData.nama}</span></div>
+                                <div>Satuan: <span class="font-medium">${existingData.satuan}</span></div>
+                                <div>Stock Sistem: <span class="font-medium">${existingData.stockSistem.toLocaleString('id-ID')}</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Lokasi Rak ${rakBeda ? '<span class="text-red-500">*</span>' : ''}
+                                </label>
+                                <input type="text" id="revisiLokasiRak" 
+                                       value="${existingIndex >= 0 ? existingData.lokasiRak : newData.lokasiRak}" 
+                                       ${!rakBeda ? 'readonly' : ''}
+                                       class="w-full px-3 py-2 border ${rakBeda ? 'border-blue-300 bg-white' : 'border-gray-200 bg-gray-100'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase ${!rakBeda ? 'cursor-not-allowed' : ''}"
+                                       placeholder="Contoh: A1, B2, C3">
+                                ${rakBeda ? '<p class="text-xs text-blue-600 mt-1">✏️ Field ini dapat direvisi</p>' : '<p class="text-xs text-gray-500 mt-1">🔒 Field ini tidak mengalami perubahan</p>'}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Qty Aktual ${qtyBeda ? '<span class="text-red-500">*</span>' : ''}
+                                </label>
+                                <input type="number" id="revisiQtyAktual" 
+                                       value="${existingIndex >= 0 ? existingData.qtyAktual : newData.qtyAktual}" 
+                                       ${!qtyBeda ? 'readonly' : ''}
+                                       class="w-full px-3 py-2 border ${qtyBeda ? 'border-blue-300 bg-white' : 'border-gray-200 bg-gray-100'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!qtyBeda ? 'cursor-not-allowed' : ''}"
+                                       placeholder="0">
+                                ${qtyBeda ? '<p class="text-xs text-blue-600 mt-1">✏️ Field ini dapat direvisi</p>' : '<p class="text-xs text-gray-500 mt-1">🔒 Field ini tidak mengalami perubahan</p>'}
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3">
+                                <p class="text-sm text-yellow-800 mb-1">
+                                    <strong>Preview Selisih:</strong>
+                                </p>
+                                <p id="previewSelisih" class="text-xl font-bold">
+                                    ${existingData.selisih >= 0 ? '+' : ''}${existingData.selisih.toLocaleString('id-ID')}
+                                </p>
+                                <p class="text-xs text-yellow-700 mt-1">Selisih akan diupdate otomatis saat Qty berubah</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button onclick="cancelRevision()" 
+                                class="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button onclick="confirmRevision()" 
+                                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            💾 Simpan Revisi
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Add event listener for qty input to update preview
+            const qtyInput = document.getElementById('revisiQtyAktual');
+            if (qtyInput && qtyBeda) {
+                qtyInput.addEventListener('input', function() {
+                    const newQty = parseFloat(this.value) || 0;
+                    const selisih = newQty - existingData.stockSistem;
+                    const previewEl = document.getElementById('previewSelisih');
+                    previewEl.textContent = `${selisih >= 0 ? '+' : ''}${selisih.toLocaleString('id-ID')}`;
+                    
+                    // Change color based on positive/negative
+                    if (selisih > 0) {
+                        previewEl.className = 'text-xl font-bold text-green-600';
+                    } else if (selisih < 0) {
+                        previewEl.className = 'text-xl font-bold text-red-600';
+                    } else {
+                        previewEl.className = 'text-xl font-bold text-gray-600';
+                    }
+                });
+            }
+            
+            // Focus on first editable field
+            if (rakBeda) {
+                document.getElementById('revisiLokasiRak').focus();
+            } else if (qtyBeda) {
+                document.getElementById('revisiQtyAktual').focus();
+            }
+        }
+
+        // Confirm revision
+        function confirmRevision() {
+            if (!window.revisionData) return;
+            
+            const { existingIndex, existingData, newData, rakBeda, qtyBeda } = window.revisionData;
+            
+            // Get revised values
+            const revisiLokasiRak = document.getElementById('revisiLokasiRak').value.trim().toUpperCase();
+            const revisiQtyAktual = parseFloat(document.getElementById('revisiQtyAktual').value) || 0;
+            
+            // Validation
+            if (!revisiLokasiRak) {
+                showNotification('Lokasi Rak harus diisi!', 'error');
+                return;
+            }
+            
+            // Update data
+            const updatedData = {
+                ...existingData,
+                lokasiRak: revisiLokasiRak,
+                qtyAktual: revisiQtyAktual,
+                selisih: revisiQtyAktual - existingData.stockSistem,
+                timestamp: new Date().toLocaleString('id-ID')
+            };
+            
+            if (existingIndex >= 0) {
+                // Update existing record (same location scenario)
+                stockOpnameData[existingIndex] = updatedData;
+                showNotification('Data berhasil direvisi!', 'success');
+            } else {
+                // For different location: decide based on user's revision
+                // If they changed the location in revision form, update the first existing record
+                // Otherwise add as new entry
+                const firstExistingIndex = stockOpnameData.findIndex(item => 
+                    item.kode === existingData.kode && item.lokasiRak === existingData.lokasiRak
+                );
+                
+                if (firstExistingIndex >= 0 && (rakBeda || qtyBeda)) {
+                    // Update the existing record with new values
+                    stockOpnameData[firstExistingIndex] = updatedData;
+                    showNotification('Data berhasil direvisi!', 'success');
+                } else {
+                    // This shouldn't happen normally, but handle gracefully
+                    stockOpnameData.push(updatedData);
+                    showNotification('Data berhasil ditambahkan!', 'success');
+                }
+            }
+            
+            // Close modal and save
+            const modal = document.querySelector('.fixed');
+            if (modal) modal.remove();
+            
+            clearForm();
+            saveDataToStorage();
+            updateStatistics();
+            renderTable();
+            
+            // Clean up global data
+            delete window.revisionData;
+        }
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('kodeMaterial').value = '';
+            document.getElementById('namaMaterial').value = '';
+            document.getElementById('satuan').value = '';
+            document.getElementById('stockSistem').value = '';
+            document.getElementById('lokasiRak').value = '';
+            document.getElementById('qtyAktual').value = '';
+            document.getElementById('infoLokasiSebelumnya').classList.add('hidden');
+            document.getElementById('infoMaterialBaru').classList.add('hidden');
+        }
+
+        // Delete stock opname item
+        function deleteItem(kode, lokasiRak) {
+            const index = stockOpnameData.findIndex(item => item.kode == kode && item.lokasiRak === lokasiRak);
+            if (index >= 0) {
+                stockOpnameData.splice(index, 1);
+                saveDataToStorage();
+                showNotification('Data berhasil dihapus!', 'success');
+                updateStatistics();
+                renderTable();
+            }
+        }
+
+        // Edit stock opname item
+        function editItem(kode, lokasiRak) {
+            const item = stockOpnameData.find(item => item.kode == kode && item.lokasiRak === lokasiRak);
+            if (item) {
+                document.getElementById('kodeMaterial').value = item.kode;
+                document.getElementById('namaMaterial').value = item.nama;
+                document.getElementById('satuan').value = item.satuan;
+                document.getElementById('stockSistem').value = item.stockSistem;
+                document.getElementById('lokasiRak').value = item.lokasiRak;
+                document.getElementById('qtyAktual').value = item.qtyAktual;
+                showPreviousLocationInfo(item.kode);
+            }
+        }
+
+        // Show keterangan modal
+        function showKeteranganModal(kode, lokasiRak) {
+            const item = stockOpnameData.find(item => item.kode == kode && item.lokasiRak === lokasiRak);
+            if (!item) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="bg-purple-100 p-2 rounded-full mr-3">
+                                <span class="text-xl">📝</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Keterangan Selisih</h3>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-500 hover:text-gray-700 text-2xl">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <h4 class="font-medium text-gray-700 mb-2">Informasi Material:</h4>
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <div><strong>Kode:</strong> ${item.kode}</div>
+                                <div><strong>Nama:</strong> ${item.nama}</div>
+                                <div><strong>Lokasi Rak:</strong> <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-semibold">${item.lokasiRak}</span></div>
+                                <div><strong>Satuan:</strong> ${item.satuan}</div>
+                                <div><strong>Stock Sistem:</strong> ${item.stockSistem.toLocaleString('id-ID')}</div>
+                                <div><strong>Qty Aktual:</strong> ${item.qtyAktual.toLocaleString('id-ID')}</div>
+                                <div><strong>Selisih:</strong> <span class="${item.selisih >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">${item.selisih >= 0 ? '+' : ''}${item.selisih.toLocaleString('id-ID')}</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Keterangan Selisih:</label>
+                            <textarea id="keteranganInput" rows="4" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                      placeholder="Masukkan keterangan penyebab selisih...">${item.keterangan || ''}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Contoh: Material rusak, kehilangan, kesalahan pencatatan, dll.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="saveKeterangan('${item.kode}', '${item.lokasiRak}')" 
+                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                            Simpan Keterangan
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Focus on textarea
+            setTimeout(() => {
+                document.getElementById('keteranganInput').focus();
+            }, 100);
+        }
+
+        // Save keterangan
+        function saveKeterangan(kode, lokasiRak) {
+            const keterangan = document.getElementById('keteranganInput').value.trim();
+            const itemIndex = stockOpnameData.findIndex(item => item.kode == kode && item.lokasiRak === lokasiRak);
+            
+            if (itemIndex >= 0) {
+                stockOpnameData[itemIndex].keterangan = keterangan;
+                saveDataToStorage();
+                renderTable();
+                document.querySelector('.fixed').remove();
+                showNotification('Keterangan berhasil disimpan!', 'success');
+            }
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            const totalMaterial = masterData.length;
+            const sudahOpname = stockOpnameData.length;
+            const selisihMinus = stockOpnameData.filter(item => item.selisih < 0).length;
+            const selisihPlus = stockOpnameData.filter(item => item.selisih > 0).length;
+
+            document.getElementById('totalMaterial').textContent = totalMaterial;
+            document.getElementById('sudahOpname').textContent = sudahOpname;
+            document.getElementById('selisihMinus').textContent = selisihMinus;
+            document.getElementById('selisihPlus').textContent = selisihPlus;
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('dataTable');
+            
+            if (stockOpnameData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="border border-gray-300 px-4 py-8 text-center text-gray-500">
+                            Belum ada data stock opname. Mulai input data di atas.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = stockOpnameData.map((item, index) => {
+                const statusClass = item.selisih === 0 ? 'bg-green-100 text-green-800' : 
+                                  item.selisih < 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+                const statusText = item.selisih === 0 ? 'Sesuai' : 
+                                 item.selisih < 0 ? 'Kurang' : 'Lebih';
+                
+                // Format keterangan untuk preview (potong jika terlalu panjang)
+                const keteranganPreview = item.keterangan && item.keterangan.length > 20 
+                    ? item.keterangan.substring(0, 20) + '...' 
+                    : item.keterangan || '';
+                
+                // Add badge for new materials
+                const newMaterialBadge = item.isNewMaterial ? 
+                    '<span class="ml-1 bg-purple-100 text-purple-700 text-xs px-1.5 py-0.5 rounded font-semibold">BARU</span>' : '';
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">${index + 1}</td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 font-mono text-xs sm:text-sm">${item.kode}${newMaterialBadge}</td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">${item.nama}</td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-center">
+                            <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold text-xs sm:text-sm">${item.lokasiRak}</span>
+                        </td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">${item.satuan}</td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">${item.stockSistem.toLocaleString('id-ID')}</td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">${item.qtyAktual.toLocaleString('id-ID')}</td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-xs sm:text-sm ${item.selisih >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${item.selisih >= 0 ? '+' : ''}${item.selisih.toLocaleString('id-ID')}
+                        </td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3">
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${statusClass} whitespace-nowrap">${statusText}</span>
+                        </td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3">
+                            <div class="flex items-center gap-1 sm:gap-2">
+                                <button onclick="showKeteranganModal('${item.kode}', '${item.lokasiRak}')" 
+                                        class="bg-purple-500 hover:bg-purple-600 text-white px-1.5 sm:px-2 py-1 rounded text-xs flex items-center gap-1 flex-shrink-0"
+                                        title="Tambah/Edit Keterangan">
+                                    📝
+                                </button>
+                                <span class="text-xs text-gray-600 truncate max-w-[100px] sm:max-w-[150px]" title="${item.keterangan || 'Belum ada keterangan'}">${keteranganPreview}</span>
+                            </div>
+                        </td>
+                        <td class="border border-gray-300 px-2 sm:px-4 py-2 sm:py-3">
+                            <div class="flex gap-1 sm:gap-2">
+                                <button onclick="editItem('${item.kode}', '${item.lokasiRak}')" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white px-1.5 sm:px-2 py-1 rounded text-xs whitespace-nowrap">
+                                    ✏️
+                                </button>
+                                <button onclick="deleteItem('${item.kode}', '${item.lokasiRak}')" 
+                                        class="bg-red-500 hover:bg-red-600 text-white px-1.5 sm:px-2 py-1 rounded text-xs whitespace-nowrap">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Update search result count after render
+            const searchValue = document.getElementById('searchMainTable')?.value || '';
+            if (searchValue) {
+                filterMainTable(searchValue);
+            } else {
+                updateSearchResultCount(stockOpnameData.length, stockOpnameData.length);
+            }
+        }
+
+        // Filter main table based on search
+        function filterMainTable(searchValue) {
+            const tbody = document.getElementById('dataTable');
+            const rows = tbody.getElementsByTagName('tr');
+            const searchLower = searchValue.toLowerCase().trim();
+            let visibleCount = 0;
+
+            // If empty search, show all
+            if (searchValue === '') {
+                for (let row of rows) {
+                    row.style.display = '';
+                    visibleCount++;
+                }
+                updateSearchResultCount(visibleCount, stockOpnameData.length);
+                return;
+            }
+
+            // Search through each row
+            for (let row of rows) {
+                // Skip if it's the "no data" row
+                if (row.cells.length === 1) continue;
+
+                const kode = row.cells[1]?.textContent || '';
+                const nama = row.cells[2]?.textContent || '';
+                const lokasi = row.cells[3]?.textContent || '';
+                const satuan = row.cells[4]?.textContent || '';
+                const keterangan = row.cells[9]?.textContent || '';
+
+                const kodeMatch = kode.toLowerCase().includes(searchLower);
+                const namaMatch = nama.toLowerCase().includes(searchLower);
+                const lokasiMatch = lokasi.toLowerCase().includes(searchLower);
+                const satuanMatch = satuan.toLowerCase().includes(searchLower);
+                const keteranganMatch = keterangan.toLowerCase().includes(searchLower);
+
+                if (kodeMatch || namaMatch || lokasiMatch || satuanMatch || keteranganMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+
+            updateSearchResultCount(visibleCount, stockOpnameData.length);
+        }
+
+        // Update search result count
+        function updateSearchResultCount(visible, total) {
+            const countElement = document.getElementById('searchResultCount');
+            if (visible === total) {
+                countElement.textContent = `Menampilkan ${total} data`;
+            } else {
+                countElement.textContent = `Ditemukan ${visible} dari ${total} data`;
+            }
+        }
+
+        // Clear main search
+        function clearMainSearch() {
+            document.getElementById('searchMainTable').value = '';
+            filterMainTable('');
+            showNotification('Pencarian direset!', 'info');
+        }
+
+        // Backup data to JSON file
+        function backupData() {
+            const backupData = {
+                masterData: masterData,
+                stockOpnameData: stockOpnameData,
+                backupDate: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `Stock_Opname_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Backup data berhasil diunduh!', 'success');
+        }
+
+        // Show restore modal
+        function showRestoreModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="bg-purple-100 p-2 rounded-full mr-3">
+                                <span class="text-2xl">📂</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Restore Data dari Backup</h3>
+                                <p class="text-sm text-gray-600">Upload file backup untuk mengembalikan data</p>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-500 hover:text-gray-700 text-2xl">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-blue-800">
+                                <strong>📋 Petunjuk:</strong>
+                            </p>
+                            <ul class="text-sm text-blue-700 mt-2 space-y-1 ml-4">
+                                <li>• Pilih file backup JSON yang sudah pernah Anda download</li>
+                                <li>• File backup berisi master data dan data stock opname</li>
+                                <li>• Proses restore akan mengganti semua data yang ada saat ini</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-yellow-800">
+                                <strong>⚠️ Peringatan:</strong> Restore akan mengganti semua data yang ada saat ini dengan data dari file backup. Pastikan Anda sudah melakukan backup data yang ada jika diperlukan.
+                            </p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File Backup:</label>
+                            <input type="file" id="restoreFile" accept=".json" 
+                                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer"
+                                   onchange="previewBackupFile(this)">
+                        </div>
+                        
+                        <div id="backupPreview" class="hidden">
+                            <div class="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Preview Data Backup:</h4>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p class="text-gray-600">Tanggal Backup:</p>
+                                        <p id="previewBackupDate" class="font-semibold text-gray-800"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Versi:</p>
+                                        <p id="previewVersion" class="font-semibold text-gray-800"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Total Master Data:</p>
+                                        <p id="previewMasterCount" class="font-semibold text-green-600"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Total Data Opname:</p>
+                                        <p id="previewOpnameCount" class="font-semibold text-blue-600"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button id="restoreButton" onclick="processRestore()" disabled
+                                class="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                            🔄 Restore Data
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Preview backup file
+        let pendingBackupData = null;
+
+        function previewBackupFile(input) {
+            const file = input.files[0];
+            if (!file) {
+                document.getElementById('backupPreview').classList.add('hidden');
+                document.getElementById('restoreButton').disabled = true;
+                pendingBackupData = null;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    // Validate backup structure
+                    if (!backupData.masterData || !backupData.stockOpnameData || !backupData.version) {
+                        showNotification('File backup tidak valid! Format file salah.', 'error');
+                        document.getElementById('backupPreview').classList.add('hidden');
+                        document.getElementById('restoreButton').disabled = true;
+                        pendingBackupData = null;
+                        return;
+                    }
+                    
+                    // Store data temporarily
+                    pendingBackupData = backupData;
+                    
+                    // Show preview
+                    const backupDate = new Date(backupData.backupDate);
+                    document.getElementById('previewBackupDate').textContent = backupDate.toLocaleString('id-ID');
+                    document.getElementById('previewVersion').textContent = backupData.version;
+                    document.getElementById('previewMasterCount').textContent = `${backupData.masterData.length} material`;
+                    document.getElementById('previewOpnameCount').textContent = `${backupData.stockOpnameData.length} record`;
+                    
+                    document.getElementById('backupPreview').classList.remove('hidden');
+                    document.getElementById('restoreButton').disabled = false;
+                    
+                    showNotification('File backup berhasil dibaca! Silakan klik "Restore Data".', 'success');
+                    
+                } catch (error) {
+                    showNotification('Error membaca file backup! Pastikan file JSON valid.', 'error');
+                    document.getElementById('backupPreview').classList.add('hidden');
+                    document.getElementById('restoreButton').disabled = true;
+                    pendingBackupData = null;
+                }
+            };
+            
+            reader.onerror = function() {
+                showNotification('Error membaca file!', 'error');
+                document.getElementById('backupPreview').classList.add('hidden');
+                document.getElementById('restoreButton').disabled = true;
+                pendingBackupData = null;
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // Process restore with confirmation
+        function processRestore() {
+            if (!pendingBackupData) {
+                showNotification('Tidak ada data backup yang valid!', 'error');
+                return;
+            }
+
+            // Show confirmation modal
+            const confirmModal = document.createElement('div');
+            confirmModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4';
+            confirmModal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-orange-100 p-2 rounded-full mr-3">
+                            <span class="text-2xl">⚠️</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">Konfirmasi Restore</h3>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-gray-600 mb-4">Apakah Anda yakin ingin melakukan restore data?</p>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p class="text-sm text-red-800">
+                                <strong>Perhatian:</strong> Semua data yang ada saat ini akan diganti dengan data dari backup. Proses ini tidak dapat dibatalkan.
+                            </p>
+                        </div>
+                        
+                        <div class="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-3">
+                            <p class="text-sm font-medium text-gray-700 mb-2">Data yang akan di-restore:</p>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Master Data: <strong>${pendingBackupData.masterData.length} material</strong></li>
+                                <li>• Data Opname: <strong>${pendingBackupData.stockOpnameData.length} record</strong></li>
+                                <li>• Tanggal Backup: <strong>${new Date(pendingBackupData.backupDate).toLocaleString('id-ID')}</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="confirmRestore()" 
+                                class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                            Ya, Restore Sekarang
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmModal);
+        }
+
+        // Confirm and execute restore
+        function confirmRestore() {
+            if (!pendingBackupData) return;
+            
+            try {
+                // Restore data
+                masterData = pendingBackupData.masterData || [];
+                stockOpnameData = pendingBackupData.stockOpnameData || [];
+                
+                // Save to localStorage
+                saveDataToStorage();
+                
+                // Update UI
+                updateStatistics();
+                renderTable();
+                clearForm();
+                
+                // Close all modals
+                const modals = document.querySelectorAll('.fixed');
+                modals.forEach(modal => modal.remove());
+                
+                // Clear pending data
+                pendingBackupData = null;
+                
+                showNotification(`✅ Restore berhasil! ${masterData.length} master data dan ${stockOpnameData.length} record opname telah dikembalikan.`, 'success');
+                
+            } catch (error) {
+                showNotification('Error saat restore data: ' + error.message, 'error');
+            }
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            if (stockOpnameData.length === 0) {
+                showNotification('Tidak ada data untuk diekspor!', 'error');
+                return;
+            }
+
+            // Show unit input popup
+            showUnitInputPopup();
+        }
+
+        // Show unit input popup for Excel export
+        function showUnitInputPopup() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-green-100 p-2 rounded-full mr-3">
+                            <span class="text-xl">📥</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">Export Data Excel</h3>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Unit/Departemen:</label>
+                        <input type="text" id="unitNameInput" placeholder="Contoh: Gudang Utama, Produksi, dll..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Nama unit akan ditampilkan di header Excel</p>
+                    </div>
+                    <div class="flex gap-4 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="processExcelExport()" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Download Excel
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Focus on input field
+            setTimeout(() => {
+                document.getElementById('unitNameInput').focus();
+            }, 100);
+            
+            // Handle Enter key
+            document.getElementById('unitNameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    processExcelExport();
+                }
+            });
+        }
+
+        // Process Excel export with unit name
+        function processExcelExport() {
+            const unitName = document.getElementById('unitNameInput').value.trim();
+            
+            if (!unitName) {
+                showNotification('Nama unit harus diisi!', 'error');
+                return;
+            }
+
+            // Get current month in Indonesian
+            const months = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            const currentMonth = months[new Date().getMonth()];
+            const currentYear = new Date().getFullYear();
+
+            // Create header text
+            const headerText = `Data Stock Opname Material Unit ${unitName} Bulan ${currentMonth} ${currentYear}`;
+
+            // Prepare export data
+            const exportData = stockOpnameData.map((item, index) => ({
+                'No': index + 1,
+                'Kode Material': item.kode,
+                'Nama Material': item.nama,
+                'Lokasi Rak': item.lokasiRak,
+                'Satuan': item.satuan,
+                'Stock Sistem': item.stockSistem,
+                'Qty Aktual': item.qtyAktual,
+                'Selisih': item.selisih,
+                'Status': item.selisih === 0 ? 'Sesuai' : item.selisih < 0 ? 'Kurang' : 'Lebih',
+                'Keterangan Selisih': item.keterangan || '',
+                'Waktu Input': item.timestamp
+            }));
+
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A3' });
+
+            // Add header text at A1
+            XLSX.utils.sheet_add_aoa(ws, [[headerText]], { origin: 'A1' });
+
+            // Set column widths
+            const colWidths = [
+                { wch: 5 },   // No
+                { wch: 15 },  // Kode Material
+                { wch: 30 },  // Nama Material
+                { wch: 12 },  // Lokasi Rak
+                { wch: 10 },  // Satuan
+                { wch: 12 },  // Stock Sistem
+                { wch: 12 },  // Qty Aktual
+                { wch: 12 },  // Selisih
+                { wch: 10 },  // Status
+                { wch: 35 },  // Keterangan Selisih
+                { wch: 20 }   // Waktu Input
+            ];
+            ws['!cols'] = colWidths;
+
+            // Merge cells for header (A1 to K1)
+            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
+
+            // Define border style
+            const borderStyle = {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+            };
+
+            // Style the header cell (bold and centered)
+            if (!ws['A1'].s) ws['A1'].s = {};
+            ws['A1'].s = {
+                font: { bold: true, sz: 14 },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                fill: { fgColor: { rgb: 'E3F2FD' } }
+            };
+
+            // Calculate the range for data table (including headers)
+            const dataStartRow = 3;
+            const dataEndRow = dataStartRow + stockOpnameData.length;
+            const columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
+
+            // Style the column headers (row 3) with borders
+            columns.forEach(col => {
+                const cellRef = col + dataStartRow;
+                if (ws[cellRef]) {
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+                    ws[cellRef].s = {
+                        font: { bold: true },
+                        fill: { fgColor: { rgb: 'F5F5F5' } },
+                        alignment: { horizontal: 'center', vertical: 'center' },
+                        border: borderStyle
+                    };
+                }
+            });
+
+            // Apply borders and alignment to all data cells
+            for (let row = dataStartRow + 1; row <= dataEndRow; row++) {
+                columns.forEach((col, colIndex) => {
+                    const cellRef = col + row;
+                    if (ws[cellRef]) {
+                        if (!ws[cellRef].s) ws[cellRef].s = {};
+                        
+                        // Define alignment based on column type
+                        let horizontalAlign = 'left';
+                        if (colIndex === 0 || colIndex === 3 || colIndex === 5 || colIndex === 6 || colIndex === 7 || colIndex === 8) {
+                            // No, Lokasi Rak, Stock Sistem, Qty Aktual, Selisih, Status - center aligned
+                            horizontalAlign = 'center';
+                        } else if (colIndex === 1) {
+                            // Kode Material - center aligned
+                            horizontalAlign = 'center';
+                        }
+                        
+                        ws[cellRef].s = {
+                            ...ws[cellRef].s,
+                            border: borderStyle,
+                            alignment: { 
+                                horizontal: horizontalAlign,
+                                vertical: 'center'
+                            }
+                        };
+                    }
+                });
+            }
+
+            // Create workbook and add worksheet
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Stock Opname');
+            
+            // Generate filename
+            const fileName = `Stock_Opname_${unitName.replace(/[^a-zA-Z0-9]/g, '_')}_${currentMonth}_${currentYear}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, fileName);
+            
+            // Close modal and show success message
+            document.querySelector('.fixed').remove();
+            showNotification(`Data berhasil diekspor untuk unit ${unitName}!`, 'success');
+        }
+
+        // Clear master data
+        function clearMasterData() {
+            if (masterData.length === 0) {
+                showNotification('Tidak ada master data untuk dihapus!', 'error');
+                return;
+            }
+
+            // Create custom confirmation modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-orange-100 p-2 rounded-full mr-3">
+                            <span class="text-xl">🗂️</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">Konfirmasi Hapus Master Data</h3>
+                    </div>
+                    <div class="mb-6">
+                        <p class="text-gray-600 mb-4">Apakah Anda yakin ingin menghapus semua master data material?</p>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p class="text-sm text-yellow-800">
+                                <strong>Peringatan:</strong> Menghapus master data akan menghapus semua data stock opname yang sudah diinput karena tidak ada referensi material.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="confirmClearMaster()" 
+                                class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                            Hapus Master Data
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function confirmClearMaster() {
+            masterData = [];
+            stockOpnameData = []; // Clear stock opname data too since master data is gone
+            saveDataToStorage();
+            document.querySelector('.fixed').remove();
+            showNotification('Master data dan semua data stock opname berhasil dihapus!', 'success');
+            updateStatistics();
+            renderTable();
+            clearForm(); // Clear form fields
+        }
+
+        // Clear all data
+        function clearAllData() {
+            if (stockOpnameData.length === 0) {
+                showNotification('Tidak ada data untuk dihapus!', 'error');
+                return;
+            }
+
+            // Create custom confirmation modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Konfirmasi Hapus</h3>
+                    <p class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus semua data stock opname?</p>
+                    <div class="flex gap-4 justify-end">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="confirmClearAll()" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            Hapus Semua
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function confirmClearAll() {
+            stockOpnameData = [];
+            saveDataToStorage();
+            document.querySelector('.fixed').remove();
+            showNotification('Semua data berhasil dihapus!', 'success');
+            updateStatistics();
+            renderTable();
+        }
+
+        // Filter belum opname table based on search
+        function filterBelumOpnameTable(searchValue) {
+            const tbody = document.getElementById('belumOpnameTableBody');
+            if (!tbody) return;
+
+            const rows = tbody.getElementsByTagName('tr');
+            const searchLower = searchValue.toLowerCase();
+
+            for (let row of rows) {
+                const kode = row.cells[1]?.textContent || '';
+                const nama = row.cells[2]?.textContent || '';
+                
+                const kodeMatch = kode.toLowerCase().includes(searchLower);
+                const namaMatch = nama.toLowerCase().includes(searchLower);
+                
+                if (kodeMatch || namaMatch || searchValue === '') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+
+        // Show selisih modal (minus or plus)
+        function showSelisihModal(type) {
+            if (stockOpnameData.length === 0) {
+                showNotification('Belum ada data stock opname!', 'error');
+                return;
+            }
+
+            // Filter data based on type
+            const filteredData = type === 'minus' 
+                ? stockOpnameData.filter(item => item.selisih < 0)
+                : stockOpnameData.filter(item => item.selisih > 0);
+
+            if (filteredData.length === 0) {
+                showNotification(`Tidak ada material dengan selisih ${type === 'minus' ? 'minus' : 'plus'}!`, 'info');
+                return;
+            }
+
+            const title = type === 'minus' ? 'Material Selisih Minus (Kurang)' : 'Material Selisih Plus (Lebih)';
+            const icon = type === 'minus' ? '⚠️' : '📈';
+            const bgColor = type === 'minus' ? 'bg-red-100' : 'bg-yellow-100';
+            const textColor = type === 'minus' ? 'text-red-800' : 'text-yellow-800';
+            const borderColor = type === 'minus' ? 'border-red-200' : 'border-yellow-200';
+
+            // Calculate total selisih
+            const totalSelisih = filteredData.reduce((sum, item) => sum + Math.abs(item.selisih), 0);
+
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="${bgColor} p-2 rounded-full mr-3">
+                                <span class="text-2xl">${icon}</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
+                                <p class="text-sm text-gray-600">Daftar material dengan selisih ${type === 'minus' ? 'kurang dari sistem' : 'lebih dari sistem'}</p>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-500 hover:text-gray-700 text-2xl">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <!-- Summary Card -->
+                    <div class="${bgColor} ${borderColor} border rounded-lg p-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <p class="text-sm ${textColor} opacity-80">Total Material</p>
+                                <p class="text-2xl font-bold ${textColor}">${filteredData.length}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm ${textColor} opacity-80">Total Selisih</p>
+                                <p class="text-2xl font-bold ${textColor}">${type === 'minus' ? '-' : '+'}${totalSelisih.toLocaleString('id-ID')}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm ${textColor} opacity-80">Status</p>
+                                <p class="text-2xl font-bold ${textColor}">${type === 'minus' ? 'Kurang' : 'Lebih'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search and Export -->
+                    <div class="mb-4 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                        <div class="w-full sm:w-64">
+                            <input type="text" id="searchSelisih" placeholder="🔍 Cari kode atau nama material..."
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   oninput="filterSelisihTable(this.value)">
+                        </div>
+                        <button onclick="exportSelisihToExcel('${type}')" 
+                                class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+                            📥 Export ke Excel
+                        </button>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="border border-gray-300 rounded-lg overflow-hidden">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="w-full border-collapse">
+                                <thead class="sticky top-0 bg-gray-50">
+                                    <tr>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">No</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Kode</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Nama Material</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Lokasi Rak</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Satuan</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-right font-semibold text-gray-700 bg-gray-50">Stock Sistem</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-right font-semibold text-gray-700 bg-gray-50">Qty Aktual</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-right font-semibold text-gray-700 bg-gray-50">Selisih</th>
+                                        <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="selisihTableBody">
+                                    ${filteredData.map((item, index) => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="border-b border-gray-200 px-4 py-3">${index + 1}</td>
+                                            <td class="border-b border-gray-200 px-4 py-3 font-mono">${item.kode}</td>
+                                            <td class="border-b border-gray-200 px-4 py-3">${item.nama}</td>
+                                            <td class="border-b border-gray-200 px-4 py-3 text-center">
+                                                <span class="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-semibold text-xs">${item.lokasiRak}</span>
+                                            </td>
+                                            <td class="border-b border-gray-200 px-4 py-3">${item.satuan}</td>
+                                            <td class="border-b border-gray-200 px-4 py-3 text-right">${item.stockSistem.toLocaleString('id-ID')}</td>
+                                            <td class="border-b border-gray-200 px-4 py-3 text-right">${item.qtyAktual.toLocaleString('id-ID')}</td>
+                                            <td class="border-b border-gray-200 px-4 py-3 text-right font-bold ${type === 'minus' ? 'text-red-600' : 'text-yellow-600'}">
+                                                ${item.selisih >= 0 ? '+' : ''}${item.selisih.toLocaleString('id-ID')}
+                                            </td>
+                                            <td class="border-b border-gray-200 px-4 py-3">
+                                                <div class="flex items-center gap-2">
+                                                    <button onclick="showKeteranganModal('${item.kode}', '${item.lokasiRak}')" 
+                                                            class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs"
+                                                            title="Tambah/Edit Keterangan">
+                                                        📝
+                                                    </button>
+                                                    <span class="text-xs text-gray-600 truncate max-w-[200px]" title="${item.keterangan || 'Belum ada keterangan'}">
+                                                        ${item.keterangan || '-'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 justify-end mt-6">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Filter selisih table based on search
+        function filterSelisihTable(searchValue) {
+            const tbody = document.getElementById('selisihTableBody');
+            if (!tbody) return;
+
+            const rows = tbody.getElementsByTagName('tr');
+            const searchLower = searchValue.toLowerCase();
+
+            for (let row of rows) {
+                const kode = row.cells[1]?.textContent || '';
+                const nama = row.cells[2]?.textContent || '';
+                
+                const kodeMatch = kode.toLowerCase().includes(searchLower);
+                const namaMatch = nama.toLowerCase().includes(searchLower);
+                
+                if (kodeMatch || namaMatch || searchValue === '') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+
+        // Export selisih to Excel
+        function exportSelisihToExcel(type) {
+            const filteredData = type === 'minus' 
+                ? stockOpnameData.filter(item => item.selisih < 0)
+                : stockOpnameData.filter(item => item.selisih > 0);
+
+            if (filteredData.length === 0) {
+                showNotification('Tidak ada data untuk diekspor!', 'error');
+                return;
+            }
+
+            const title = type === 'minus' ? 'Material Selisih Minus' : 'Material Selisih Plus';
+
+            // Prepare export data
+            const exportData = filteredData.map((item, index) => ({
+                'No': index + 1,
+                'Kode Material': item.kode,
+                'Nama Material': item.nama,
+                'Lokasi Rak': item.lokasiRak,
+                'Satuan': item.satuan,
+                'Stock Sistem': item.stockSistem,
+                'Qty Aktual': item.qtyAktual,
+                'Selisih': item.selisih,
+                'Keterangan Selisih': item.keterangan || '',
+                'Waktu Input': item.timestamp
+            }));
+
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A2' });
+
+            // Add title at A1
+            XLSX.utils.sheet_add_aoa(ws, [[title]], { origin: 'A1' });
+
+            // Set column widths
+            const colWidths = [
+                { wch: 5 },   // No
+                { wch: 15 },  // Kode Material
+                { wch: 30 },  // Nama Material
+                { wch: 12 },  // Lokasi Rak
+                { wch: 10 },  // Satuan
+                { wch: 12 },  // Stock Sistem
+                { wch: 12 },  // Qty Aktual
+                { wch: 12 },  // Selisih
+                { wch: 35 },  // Keterangan Selisih
+                { wch: 20 }   // Waktu Input
+            ];
+            ws['!cols'] = colWidths;
+
+            // Merge cells for title (A1 to J1)
+            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }];
+
+            // Style the title cell
+            if (!ws['A1'].s) ws['A1'].s = {};
+            ws['A1'].s = {
+                font: { bold: true, sz: 14 },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                fill: { fgColor: { rgb: type === 'minus' ? 'FFCCCC' : 'FFF8DC' } }
+            };
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, title);
+            
+            // Generate filename
+            const today = new Date().toISOString().split('T')[0];
+            const fileName = `${title.replace(/ /g, '_')}_${today}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, fileName);
+            
+            showNotification(`${filteredData.length} material selisih ${type === 'minus' ? 'minus' : 'plus'} berhasil diekspor!`, 'success');
+        }
+
+        // Show belum opname modal
+        function showBelumOpnameModal() {
+            if (masterData.length === 0) {
+                showNotification('Master data belum diimport!', 'error');
+                return;
+            }
+
+            // Find materials that haven't been counted yet (by unique kode)
+            const opnamedKodes = new Set(stockOpnameData.map(item => item.kode));
+            const belumOpname = masterData.filter(master => !opnamedKodes.has(master.kode));
+
+            const totalMaster = masterData.length;
+            const totalSudahOpname = opnamedKodes.size;
+            const totalBelumOpname = belumOpname.length;
+            const persentaseSelesai = totalMaster > 0 ? Math.round((totalSudahOpname / totalMaster) * 100) : 0;
+
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="bg-amber-100 p-2 rounded-full mr-3">
+                                <span class="text-2xl">📋</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Material Belum Diopname</h3>
+                                <p class="text-sm text-gray-600">Daftar material yang belum dilakukan stock opname</p>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-500 hover:text-gray-700 text-2xl">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Progress Stock Opname</span>
+                            <span class="text-sm font-bold text-blue-600">${persentaseSelesai}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500" 
+                                 style="width: ${persentaseSelesai}%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-gray-600">
+                            <span>✅ Sudah: ${totalSudahOpname} material</span>
+                            <span>⏳ Belum: ${totalBelumOpname} material</span>
+                            <span>📦 Total: ${totalMaster} material</span>
+                        </div>
+                    </div>
+
+                    ${totalBelumOpname === 0 ? `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                            <div class="text-5xl mb-3">🎉</div>
+                            <h4 class="text-lg font-semibold text-green-800 mb-2">Stock Opname Selesai!</h4>
+                            <p class="text-green-700">Semua material sudah berhasil diopname. Silakan export data untuk laporan.</p>
+                        </div>
+                    ` : `
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div class="flex items-center">
+                                    <div class="bg-red-100 p-2 rounded-full mr-3">
+                                        <span class="text-xl">⏳</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-red-700">Belum Diopname</p>
+                                        <p class="text-2xl font-bold text-red-800">${totalBelumOpname}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-2 rounded-full mr-3">
+                                        <span class="text-xl">📋</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-purple-700">Perlu Dicek</p>
+                                        <p class="text-2xl font-bold text-purple-800">${totalBelumOpname}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search and Export for Belum Opname -->
+                        <div class="mb-4 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                            <div class="w-full sm:w-64">
+                                <input type="text" id="searchBelumOpname" placeholder="🔍 Cari kode atau nama material..."
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       oninput="filterBelumOpnameTable(this.value)">
+                            </div>
+                            <button onclick="exportBelumOpnameToExcel()" 
+                                    class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+                                📥 Export Daftar Belum Opname
+                            </button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="border border-gray-300 rounded-lg overflow-hidden">
+                            <div class="max-h-96 overflow-y-auto">
+                                <table class="w-full border-collapse">
+                                    <thead class="sticky top-0 bg-gray-50">
+                                        <tr>
+                                            <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">No</th>
+                                            <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Kode Material</th>
+                                            <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Nama Material</th>
+                                            <th class="border-b border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Satuan</th>
+                                            <th class="border-b border-gray-300 px-4 py-3 text-right font-semibold text-gray-700 bg-gray-50">Stock di Sistem</th>
+                                            <th class="border-b border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="belumOpnameTableBody">
+                                        ${belumOpname.map((item, index) => `
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="border-b border-gray-200 px-4 py-3">${index + 1}</td>
+                                                <td class="border-b border-gray-200 px-4 py-3 font-mono">${item.kode}</td>
+                                                <td class="border-b border-gray-200 px-4 py-3">${item.nama}</td>
+                                                <td class="border-b border-gray-200 px-4 py-3">${item.satuan}</td>
+                                                <td class="border-b border-gray-200 px-4 py-3 text-right">${(item.stockSistem || 0).toLocaleString('id-ID')}</td>
+                                                <td class="border-b border-gray-200 px-4 py-3 text-center">
+                                                    <button onclick="quickAddFromBelumOpname('${item.kode}')" 
+                                                            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">
+                                                        ➕ Input Sekarang
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `}
+                    
+                    <div class="flex gap-4 justify-end mt-6">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Quick add from belum opname
+        function quickAddFromBelumOpname(kode) {
+            // Close modal
+            const modal = document.querySelector('.fixed');
+            if (modal) modal.remove();
+
+            // Fill form
+            document.getElementById('kodeMaterial').value = kode;
+            refreshMaterialInfo();
+            showPreviousLocationInfo(kode);
+
+            // Focus on lokasi rak input
+            document.getElementById('lokasiRak').focus();
+
+            // Scroll to input section
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            showNotification(`Material ${kode} siap diinput!`, 'info');
+        }
+
+        // Export belum opname to Excel
+        function exportBelumOpnameToExcel() {
+            const opnamedKodes = new Set(stockOpnameData.map(item => item.kode));
+            const belumOpname = masterData.filter(master => !opnamedKodes.has(master.kode));
+
+            if (belumOpname.length === 0) {
+                showNotification('Tidak ada material yang belum diopname!', 'info');
+                return;
+            }
+
+            // Prepare export data
+            const exportData = belumOpname.map((item, index) => ({
+                'No': index + 1,
+                'Kode Material': item.kode,
+                'Nama Material': item.nama,
+                'Sat
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c54908d4392a3d9',t:'MTc2OTY0NjAzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>
+let masterData = [];
+let stockOpnameData = [];
+let codeReader = null;
+let currentStream = null;
+let db = null;
+
+const DB_NAME = 'StockOpnameDB';
+const DB_VERSION = 1;
+const MASTER_STORE = 'masterData';
+const STOCK_STORE = 'stockOpnameData';
+
+function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(MASTER_STORE)) {
+                db.createObjectStore(MASTER_STORE, { keyPath: 'kode' });
+            }
+            if (!db.objectStoreNames.contains(STOCK_STORE)) {
+                const store = db.createObjectStore(STOCK_STORE, { autoIncrement: true });
+                store.createIndex('kode', 'kode', { unique: false });
+                store.createIndex('lokasiRak', 'lokasiRak', { unique: false });
+            }
+        };
+        request.onsuccess = () => { db = request.result; resolve(db); };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function saveMasterDataToDB() {
+    const tx = db.transaction(MASTER_STORE, "readwrite");
+    const store = tx.objectStore(MASTER_STORE);
+    store.clear();
+    masterData.forEach(item => store.put(item));
+}
+
+async function saveStockDataToDB() {
+    const tx = db.transaction(STOCK_STORE, "readwrite");
+    const store = tx.objectStore(STOCK_STORE);
+    store.clear();
+    stockOpnameData.forEach(item => store.put(item));
+}
+
+async function saveDataToStorage() {
+    if (!db) await initIndexedDB();
+    await saveMasterDataToDB();
+    await saveStockDataToDB();
+}
+
+async function loadMasterDataFromDB() {
+    return new Promise((resolve) => {
+        const tx = db.transaction(MASTER_STORE, "readonly");
+        const store = tx.objectStore(MASTER_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => { masterData = req.result || []; resolve(); };
+    });
+}
+
+async function loadStockDataFromDB() {
+    return new Promise((resolve) => {
+        const tx = db.transaction(STOCK_STORE, "readonly");
+        const store = tx.objectStore(STOCK_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => { stockOpnameData = req.result || []; resolve(); };
+    });
+}
+
+async function loadDataFromStorage() {
+    if (!db) await initIndexedDB();
+    await loadMasterDataFromDB();
+    await loadStockDataFromDB();
+    updateStatistics();
+    renderTable();
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await initIndexedDB();
+    await loadDataFromStorage();
+    initializeBarcodeReader();
+});
+</script>
+</body>
+</html>
